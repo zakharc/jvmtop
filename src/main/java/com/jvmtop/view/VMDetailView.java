@@ -21,23 +21,17 @@
 
 package com.jvmtop.view;
 
-import com.jvmtop.monitor.VMInfo;
-import com.jvmtop.monitor.VMInfoState;
-import com.jvmtop.openjdk.tools.LocalVirtualMachine;
-import com.sun.tools.classfile.Annotation.element_value;
-
 import java.lang.management.ThreadInfo;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+import com.jvmtop.monitor.VMInfo;
+import com.jvmtop.monitor.VMInfoState;
+import com.jvmtop.openjdk.tools.LocalVirtualMachine;
 
 /**
  * "detail" view, printing detail metrics of a specific jvm.
@@ -218,6 +212,7 @@ public class VMDetailView extends AbstractConsoleView {
         }
     }
 
+    // TODO: get full stack traces comparable to jstack output
     private void printStackTrace(Map<Long, StackTraceElement[]> stackTraces, Long tid)
     {
       StackTraceElement[] stackTraceElement = stackTraces.get(tid);
