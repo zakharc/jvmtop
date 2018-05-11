@@ -24,13 +24,20 @@ package com.jvmtop.view;
 import com.jvmtop.monitor.VMInfo;
 import com.jvmtop.monitor.VMInfoState;
 import com.jvmtop.openjdk.tools.LocalVirtualMachine;
+import com.sun.tools.classfile.Annotation.element_value;
 
 import java.lang.management.ThreadInfo;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * "detail" view, printing detail metrics of a specific jvm.
@@ -161,6 +168,14 @@ public class VMDetailView extends AbstractConsoleView {
                 newThreadCPUMillis.put(tid, threadCpuTime);
             }
 
+            // collect all stack traces
+            Map<Thread, StackTraceElement[]> allStackTraces = Thread.getAllStackTraces();
+            Map<Long, StackTraceElement[]> stackTraces = new HashMap<Long, StackTraceElement[]>();
+            
+            for (Entry<Thread, StackTraceElement[]> entry : allStackTraces.entrySet()) {
+              stackTraces.put(entry.getKey().getId(), entry.getValue());
+            }
+            
             cpuTimeMap = sortByValue(cpuTimeMap, true);
 
             int displayedThreads = 0;
@@ -183,6 +198,9 @@ public class VMDetailView extends AbstractConsoleView {
                             getThreadCPUUtilization(vmInfo_.getThreadMXBean()
                                     .getThreadCpuTime(tid), vmInfo_.getProxyClient()
                                     .getProcessCpuTime(), 1), getBlockedThread(info));
+                    if (stackTraces.get(tid) != null) {
+                      printSrackTrace(stackTraces, tid);
+                    }
                 }
             }
             if (newThreadCPUMillis.size() >= numberOfDisplayedThreads_
@@ -198,6 +216,16 @@ public class VMDetailView extends AbstractConsoleView {
             System.out
                     .printf("%n -Thread CPU telemetries are not available on the monitored jvm/platform-%n");
         }
+    }
+
+    private void printSrackTrace(Map<Long, StackTraceElement[]> stackTraces, Long tid)
+    {
+      StackTraceElement[] stackTraceElement = stackTraces.get(tid);
+      for (int i = 1; i < stackTraceElement.length; i++) {
+        StackTraceElement s = stackTraceElement[i];
+        System.out.println("\tat " + s.getClassName() + "." + s.getMethodName()
+            + "(" + s.getFileName() + ":" + s.getLineNumber() + ")");
+      }
     }
 
     private String getBlockedThread(ThreadInfo info) {

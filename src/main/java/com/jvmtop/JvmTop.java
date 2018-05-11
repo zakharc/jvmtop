@@ -20,17 +20,12 @@
  */
 package com.jvmtop;
 
-import com.jvmtop.profiler.HeapSampler;
-import com.jvmtop.view.ConsoleView;
-import com.jvmtop.view.VMDetailView;
-import com.jvmtop.view.VMMemProfileView;
-import com.jvmtop.view.VMOverviewView;
-import com.jvmtop.view.VMProfileView;
-import com.sun.tools.attach.AttachNotSupportedException;
-import joptsimple.OptionParser;
-import joptsimple.OptionSet;
-
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.util.Arrays;
 import java.util.Date;
@@ -39,6 +34,17 @@ import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import com.jvmtop.profiler.HeapSampler;
+import com.jvmtop.view.ConsoleView;
+import com.jvmtop.view.VMDetailView;
+import com.jvmtop.view.VMMemProfileView;
+import com.jvmtop.view.VMOverviewView;
+import com.jvmtop.view.VMProfileView;
+import com.sun.tools.attach.AttachNotSupportedException;
+
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
 
 /**
  * JvmTop entry point class.
@@ -129,7 +135,7 @@ public class JvmTop {
         boolean sysInfoOption = a.has("sysinfo");
         Integer pid = null;
         Integer width = null;
-        double delay = 1.0;
+        double delay = 10.0;
         boolean profileMode = a.has("profile");
         boolean profileMemMode = a.has("profile-mem");
         boolean deltasEnabled = a.has("enable-deltas");
