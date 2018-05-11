@@ -49,7 +49,7 @@ public class VMDetailView extends AbstractConsoleView {
 
     private VMInfo vmInfo_;
     private boolean sortByTotalCPU_ = false;
-    private int numberOfDisplayedThreads_ = 10;
+    private int numberOfDisplayedThreads_ = 20;
     private int threadNameDisplayWidth_ = 30;
     private boolean displayedThreadLimit_ = true;
 
@@ -199,7 +199,7 @@ public class VMDetailView extends AbstractConsoleView {
                                     .getThreadCpuTime(tid), vmInfo_.getProxyClient()
                                     .getProcessCpuTime(), 1), getBlockedThread(info));
                     if (stackTraces.get(tid) != null) {
-                      printSrackTrace(stackTraces, tid);
+                      printStackTrace(stackTraces, tid);
                     }
                 }
             }
@@ -218,7 +218,7 @@ public class VMDetailView extends AbstractConsoleView {
         }
     }
 
-    private void printSrackTrace(Map<Long, StackTraceElement[]> stackTraces, Long tid)
+    private void printStackTrace(Map<Long, StackTraceElement[]> stackTraces, Long tid)
     {
       StackTraceElement[] stackTraceElement = stackTraces.get(tid);
       for (int i = 1; i < stackTraceElement.length; i++) {
