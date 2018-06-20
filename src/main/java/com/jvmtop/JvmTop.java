@@ -135,7 +135,7 @@ public class JvmTop {
         boolean sysInfoOption = a.has("sysinfo");
         Integer pid = null;
         Integer width = null;
-        double delay = 10.0;
+        double delay = 5.0;
         boolean profileMode = a.has("profile");
         boolean profileMemMode = a.has("profile-mem");
         boolean deltasEnabled = a.has("enable-deltas");
@@ -312,11 +312,14 @@ public class JvmTop {
                 view.printView();
                 System.out.println("\n");
                 System.out.flush();
-                iterations++;
                 if (iterations >= maxIterations_ && maxIterations_ > 0) {
                     break;
                 }
-                view.sleep((int) (delay_ * 1000));
+                if (iterations != 0)
+                {
+                  view.sleep((int) (delay_ * 1000));
+                }
+                iterations++;
             }
         } catch (NoClassDefFoundError e) {
             e.printStackTrace(System.err);
