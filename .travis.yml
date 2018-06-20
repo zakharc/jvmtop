@@ -1,6 +1,6 @@
 language: java
 sudo: false
-script: mvn clean jfx:jar
+script: mvn clean install
 
 jdk:
   - oraclejdk8
