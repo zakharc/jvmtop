@@ -46,13 +46,13 @@ public class VMDetailView extends AbstractConsoleView
 
   private boolean          sortByTotalCPU_            = false;
 
-  private int              numberOfDisplayedThreads_  = 10;
+  private int              numberOfDisplayedThreads_  = 5;
 
   private int              threadNameDisplayWidth_    = 30;
 
   private boolean          displayedThreadLimit_      = true;
 
-  private final static int STACK_TRACE_ELEMENTS_SHOWN = 4;
+  private final static int STACK_TRACE_ELEMENTS_SHOWN = 5;
 
   //TODO: refactor
   private Map<Long, Long>  previousThreadCPUMillis    = new HashMap<Long, Long>();
