@@ -66,10 +66,10 @@ public class JvmTop {
     private Boolean supportsSystemAverage_;
     private java.lang.management.OperatingSystemMXBean localOSBean_;
 
-    private final static String CLEAR_TERMINAL_ANSI_CMD = new String(
-            new byte[]{
-                    (byte) 0x1b, (byte) 0x5b, (byte) 0x32, (byte) 0x4a, (byte) 0x1b,
-                    (byte) 0x5b, (byte) 0x48});
+    private final static String ERASE_TERMINAL_SCREEN = new String(
+        new byte[]{
+            (byte) 0x1b, (byte) 0x5b, (byte) 0x31, (byte) 0x4a, (byte) 0x1b,
+            (byte) 0x5b, (byte) 0x48});
 
     private int maxIterations_ = -1;
     private static Logger logger;
@@ -342,7 +342,7 @@ public class JvmTop {
         } else if (System.getProperty("jvmtop.altClear") != null) {
             System.out.print('\f');
         } else {
-            System.out.print(CLEAR_TERMINAL_ANSI_CMD);
+          System.out.println(ERASE_TERMINAL_SCREEN);
         }
     }
 
