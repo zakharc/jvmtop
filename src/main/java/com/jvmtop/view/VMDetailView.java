@@ -247,7 +247,7 @@ public class VMDetailView extends AbstractConsoleView
 
   private void printStackTraces(StackTraceElement[] stackTraceElements)
   {
-    for (int i = 1; i < stackTraceElements.length && i < STACK_TRACE_ELEMENTS_SHOWN; i++)
+    for (int i = 0; i < stackTraceElements.length && i < STACK_TRACE_ELEMENTS_SHOWN; i++)
     {
       StackTraceElement s = stackTraceElements[i];
       System.out.println("\t| at " + s.getClassName() + "." + s.getMethodName()
