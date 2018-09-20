@@ -26,26 +26,26 @@ package com.jvmtop.view;
  * @author paru
  */
 public interface ConsoleView {
-    /**
-     * Prints the view to STDOUT.
-     *
-     * @throws Exception
-     */
-    public void printView() throws Exception;
+	/**
+	 * Prints the view to STDOUT.
+	 *
+	 * @throws Exception
+	 */
+	public void printView() throws Exception;
 
-    /**
-     * Notifies that this view encountered issues
-     * and should be called again (e.g. due to exceptions)
-     * <p>
-     * TODO: remove this method and use proper exception instead.
-     *
-     * @return
-     */
-    public boolean shouldExit();
+	/**
+	 * Notifies that this view encountered issues and should be called again (e.g.
+	 * due to exceptions)
+	 * <p>
+	 * TODO: remove this method and use proper exception instead.
+	 *
+	 * @return
+	 */
+	public boolean shouldExit();
 
-    /**
-     * Requests the view to sleep (defined as "not outputting anything").
-     * However, the view is allowed to do some work / telemtry retrieval during sleep.
-     */
-    public void sleep(long millis) throws Exception;
+	/**
+	 * Requests the view to sleep (defined as "not outputting anything"). However,
+	 * the view is allowed to do some work / telemtry retrieval during sleep.
+	 */
+	public void sleep(long millis) throws Exception;
 }
