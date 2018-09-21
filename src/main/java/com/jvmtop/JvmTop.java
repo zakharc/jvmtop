@@ -57,27 +57,27 @@ import joptsimple.OptionSet;
  * - parses program arguments - selects console view - prints header - main
  * "iteration loop"
  * <p>
- * TODO: refactor to split these tasks
- *
+ * @author zakharc
  * @author paru
  * @author tckb
  */
 public class JvmTop {
 
 	public static final String VERSION = "0.9";
-	private Double delay_ = 1.0;
-	private Boolean supportsSystemAverage_;
-	private java.lang.management.OperatingSystemMXBean localOSBean_;
-	private JvmTopkeyListener keyListener;
-	private static VMDetailView vmDetailView;
-	private static VMOverviewView vmOverviewView;
-
+	private final static double DELAY_OVERVIEW = 1.5;
+	private final static double DELAY_DETAIL = 3.0;
+	private final static double MIN_ELEMENTS_SHOWN = 3;
+	private final static double MAX_ELEMENTS_SHOWN = 10;
 	private final static String ERASE_TERMINAL_SCREEN = new String(
 			new byte[] { (byte) 0x1b, (byte) 0x5b, (byte) 0x31, (byte) 0x4a, (byte) 0x1b, (byte) 0x5b, (byte) 0x48 });
 
+	private Double delay_ = 1.0;
 	private int maxIterations_ = -1;
-	private final static double DELAY_OVERVIEW = 1.5;
-	private final static double DELAY_DETAIL = 3.0;
+	private Boolean supportsSystemAverage_;
+	private java.lang.management.OperatingSystemMXBean localOSBean_;
+	private JvmTopKeyListener keyListener;
+	private static VMDetailView vmDetailView;
+	private static VMOverviewView vmOverviewView;
 	private static Logger logger;
 	private static Logger loggerJNative = Logger.getLogger(GlobalScreen.class.getPackage().getName());
 
@@ -223,7 +223,7 @@ public class JvmTop {
 						vmDetailView.setNumberOfDisplayedThreads(threadlimit);
 					}
 					if (stackLimit != null) {
-						VMDetailView.setStackTraceElementsShown(stackLimit);
+						vmDetailView.setStackTraceElementsShown(stackLimit);
 					}
 					if (threadNameWidth != null) {
 						vmDetailView.setThreadNameDisplayWidth(threadNameWidth);
@@ -274,14 +274,6 @@ public class JvmTop {
 		}
 	}
 
-	public int getMaxIterations() {
-		return maxIterations_;
-	}
-
-	public void setMaxIterations(int iterations) {
-		maxIterations_ = iterations;
-	}
-
 	private static void fineLogging() {
 		// get the top Logger:
 		Logger topLogger = java.util.logging.Logger.getLogger("");
@@ -316,7 +308,7 @@ public class JvmTop {
 	protected void run(ConsoleView view) throws Exception {
 		try {
 			System.setOut(new PrintStream(new BufferedOutputStream(new FileOutputStream(FileDescriptor.out)), false));
-			keyListener = new JvmTopkeyListener(this);
+			keyListener = new JvmTopKeyListener(this);
 			GlobalScreen.addNativeKeyListener(keyListener);
 			if (view instanceof VMDetailView) {
 				keyListener.addDetailedView((VMDetailView) view);
@@ -370,9 +362,6 @@ public class JvmTop {
 		localOSBean_ = ManagementFactory.getOperatingSystemMXBean();
 	}
 
-	/**
-	 * @throws SecurityException
-	 */
 	private void printTopBar() {
 		System.out.printf(" JvmTop %s - %8tT, %6s, %2d cpus, %15.15s", VERSION, new Date(), localOSBean_.getArch(),
 				localOSBean_.getAvailableProcessors(), localOSBean_.getName() + " " + localOSBean_.getVersion());
@@ -396,17 +385,9 @@ public class JvmTop {
 		return supportsSystemAverage_;
 	}
 
-	public Double getDelay() {
-		return delay_;
-	}
+	class JvmTopKeyListener implements NativeKeyListener {
 
-	public void setDelay(Double delay) {
-		delay_ = delay;
-	}
-
-	class JvmTopkeyListener implements NativeKeyListener {
-
-		public JvmTopkeyListener(JvmTop instance) {
+		public JvmTopKeyListener(JvmTop instance) {
 			super();
 			this.instance = instance;
 		}
@@ -416,35 +397,43 @@ public class JvmTop {
 		VMOverviewView overviewView;
 
 		public void nativeKeyPressed(NativeKeyEvent e) {
-			try {
-				Double newDelay = Double.parseDouble(NativeKeyEvent.getKeyText(e.getKeyCode()));
-				if (newDelay > 0 && newDelay < 10) {
-					instance.delay_ = newDelay.doubleValue();
+			if (detailView != null) {
+				waitForExitButtonPressed(e);
+				try {
+					Double newDelay = Double.parseDouble(NativeKeyEvent.getKeyText(e.getKeyCode()));
+					if (newDelay > 0 && newDelay < 10) {
+						instance.delay_ = newDelay.doubleValue();
+					}
+				} catch (Exception e2) {
+					// do nothing
 				}
-			} catch (Exception e2) {
-				// do nothing
+				int numberOfDisplayedThreads;
+				int stackTraceElementsShown;
+				if (detailView != null) {
+					numberOfDisplayedThreads = detailView.getNumberOfDisplayedThreads();
+					stackTraceElementsShown = detailView.getStackTraceElementsShown();
+					if (NativeKeyEvent.getKeyText(e.getKeyCode()).contains("Close Bracket")) {
+						if (numberOfDisplayedThreads < MAX_ELEMENTS_SHOWN && stackTraceElementsShown < MAX_ELEMENTS_SHOWN) {
+							detailView.incrementNumberOfDisplayedThreads();
+							detailView.incrementStackTraceElementsShown();
+						}
+					}
+					if (NativeKeyEvent.getKeyText(e.getKeyCode()).contains("Slash")) {
+						if (numberOfDisplayedThreads > MIN_ELEMENTS_SHOWN && stackTraceElementsShown > MIN_ELEMENTS_SHOWN) {
+							detailView.decrementNumberOfDisplayedThreads();
+							detailView.decrementStackTraceElementsShown();
+						}
+					}
+				}
+			} else {
+				waitForExitButtonPressed(e);
+				// TODO: redirecting to detailed view on pid typed
 			}
-			NativeKeyEvent.getKeyText(e.getKeyCode()).contains("Q");
+		}
+
+		private void waitForExitButtonPressed(NativeKeyEvent e) {
 			if (NativeKeyEvent.getKeyText(e.getKeyCode()).contains("Q")) {
 				System.exit(0);
-			}
-			int numberOfDisplayedThreads;
-			int stackTraceElementsShown;
-			if (detailView != null) {
-				numberOfDisplayedThreads = detailView.getNumberOfDisplayedThreads();
-				stackTraceElementsShown = VMDetailView.getStackTraceElementsShown();
-				if (NativeKeyEvent.getKeyText(e.getKeyCode()).contains("Close Bracket")) {
-					if (numberOfDisplayedThreads < 10 && stackTraceElementsShown < 10) {
-						detailView.setNumberOfDisplayedThreads(++numberOfDisplayedThreads);
-						VMDetailView.setStackTraceElementsShown(++stackTraceElementsShown);
-					}
-				}
-				if (NativeKeyEvent.getKeyText(e.getKeyCode()).contains("Slash")) {
-					if (numberOfDisplayedThreads > 3 && stackTraceElementsShown > 3) {
-						detailView.setNumberOfDisplayedThreads(--numberOfDisplayedThreads);
-						VMDetailView.setStackTraceElementsShown(--stackTraceElementsShown);
-					}
-				}
 			}
 		}
 
@@ -459,7 +448,7 @@ public class JvmTop {
 		public void addDetailedView(VMDetailView view) {
 			this.detailView = view;
 		}
-		
+
 		public void addOverviewView(VMOverviewView view) {
 			this.overviewView = view;
 		}
@@ -471,6 +460,22 @@ public class JvmTop {
 				// do nothing
 			}
 		}
+	}
+
+	public Double getDelay() {
+		return delay_;
+	}
+
+	public void setDelay(Double delay) {
+		delay_ = delay;
+	}
+
+	public int getMaxIterations() {
+		return maxIterations_;
+	}
+
+	public void setMaxIterations(int iterations) {
+		maxIterations_ = iterations;
 	}
 
 }

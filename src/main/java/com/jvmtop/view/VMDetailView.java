@@ -220,19 +220,35 @@ public class VMDetailView extends AbstractConsoleView {
 	public void setNumberOfDisplayedThreads(int numberOfDisplayedThreads) {
 		VMDetailView.numberOfDisplayedThreads = numberOfDisplayedThreads;
 	}
+	
+	public void incrementNumberOfDisplayedThreads() {
+		++VMDetailView.numberOfDisplayedThreads;;
+	}
+	
+	public void decrementNumberOfDisplayedThreads() {
+		--VMDetailView.numberOfDisplayedThreads;;
+	}
 
 	/**
 	 * @return the stackTraceElementsShown
 	 */
-	public static int getStackTraceElementsShown() {
+	public int getStackTraceElementsShown() {
 		return stackTraceElementsShown;
 	}
 
 	/**
 	 * @param stackTraceElementsShown the stackTraceElementsShown to set
 	 */
-	public static void setStackTraceElementsShown(int stackTraceElementsShown) {
+	public void setStackTraceElementsShown(int stackTraceElementsShown) {
 		VMDetailView.stackTraceElementsShown = stackTraceElementsShown;
+	}
+
+	public void incrementStackTraceElementsShown() {
+		++VMDetailView.stackTraceElementsShown;
+	}
+
+	public void decrementStackTraceElementsShown() {
+		--VMDetailView.stackTraceElementsShown;
 	}
 
 	public boolean isDisplayedThreadLimit() {
