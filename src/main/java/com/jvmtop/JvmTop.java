@@ -35,6 +35,11 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.jnativehook.GlobalScreen;
+import org.jnativehook.NativeHookException;
+import org.jnativehook.keyboard.NativeKeyEvent;
+import org.jnativehook.keyboard.NativeKeyListener;
+
 import com.jvmtop.profiler.HeapSampler;
 import com.jvmtop.view.ConsoleView;
 import com.jvmtop.view.VMDetailView;
@@ -63,14 +68,18 @@ public class JvmTop {
 	private Double delay_ = 1.0;
 	private Boolean supportsSystemAverage_;
 	private java.lang.management.OperatingSystemMXBean localOSBean_;
+	private JvmTopkeyListener keyListener;
+	private static VMDetailView vmDetailView;
+	private static VMOverviewView vmOverviewView;
 
 	private final static String ERASE_TERMINAL_SCREEN = new String(
 			new byte[] { (byte) 0x1b, (byte) 0x5b, (byte) 0x31, (byte) 0x4a, (byte) 0x1b, (byte) 0x5b, (byte) 0x48 });
 
 	private int maxIterations_ = -1;
 	private final static double DELAY_OVERVIEW = 1.5;
-	private final static double DELAY_DETAIL = 5.0;
+	private final static double DELAY_DETAIL = 3.0;
 	private static Logger logger;
+	private static Logger loggerJNative = Logger.getLogger(GlobalScreen.class.getPackage().getName());
 
 	private static OptionParser createOptionParser() {
 		OptionParser parser = new OptionParser();
@@ -90,6 +99,8 @@ public class JvmTop {
 		parser.accepts("verbose", "verbose mode");
 		parser.accepts("threadlimit", "sets the number of displayed threads in detail mode").withRequiredArg()
 				.ofType(Integer.class);
+		parser.accepts("stacklimit", "sets the number of displayed stack trace elements in detail mode")
+				.withRequiredArg().ofType(Integer.class);
 		parser.accepts("disable-threadlimit", "displays all threads in detail mode");
 
 		parser.acceptsAll(Arrays.asList("p", "pid"), "PID to connect to").withRequiredArg().ofType(Integer.class);
@@ -111,6 +122,8 @@ public class JvmTop {
 		Locale.setDefault(Locale.US);
 
 		logger = Logger.getLogger("jvmtop");
+		loggerJNative.setLevel(Level.OFF);
+		loggerJNative.setUseParentHandlers(false);
 
 		OptionParser parser = createOptionParser();
 		OptionSet a = parser.parse(args);
@@ -125,22 +138,16 @@ public class JvmTop {
 
 		boolean sysInfoOption = a.has("sysinfo");
 		Integer pid = null;
-		Integer width = null;		
-		double delay = DELAY_DETAIL;
+		Integer width = null;
 		boolean profileMode = a.has("profile");
 		boolean profileMemMode = a.has("profile-mem");
 		boolean deltasEnabled = a.has("enable-deltas");
 		Integer iterations = a.has("once") ? 1 : -1;
 		Integer threadlimit = null;
+		Integer stackLimit = null;
 		boolean threadLimitEnabled = true;
 		Integer threadNameWidth = null;
-
-		if (a.hasArgument("delay")) {
-			delay = (Double) (a.valueOf("delay"));
-			if (delay < 0.1d) {
-				throw new IllegalArgumentException("Delay cannot be set below 0.1");
-			}
-		}
+		double delay;
 
 		if (a.hasArgument("n")) {
 			iterations = (Integer) a.valueOf("n");
@@ -163,6 +170,10 @@ public class JvmTop {
 			threadlimit = (Integer) a.valueOf("threadlimit");
 		}
 
+		if (a.hasArgument("stacklimit")) {
+			stackLimit = (Integer) a.valueOf("stacklimit");
+		}
+
 		if (a.has("disable-threadlimit")) {
 			threadLimitEnabled = false;
 		}
@@ -171,6 +182,13 @@ public class JvmTop {
 			fineLogging();
 			logger.setLevel(Level.ALL);
 			logger.fine("Verbosity mode.");
+		}
+		delay = (pid == null) ? DELAY_OVERVIEW : DELAY_DETAIL;
+		if (a.hasArgument("delay")) {
+			delay = (Double) (a.valueOf("delay"));
+			if (delay < 0.1d) {
+				throw new IllegalArgumentException("Delay cannot be set below 0.1");
+			}
 		}
 
 		if (a.hasArgument("threadnamewidth")) {
@@ -190,7 +208,8 @@ public class JvmTop {
 			jvmTop.setMaxIterations(iterations);
 			if (pid == null) {
 				jvmTop.setDelay(DELAY_OVERVIEW);
-				jvmTop.run(new VMOverviewView(width));
+				vmOverviewView = new VMOverviewView(width);
+				jvmTop.run(vmOverviewView);
 			} else {
 				if (profileMode) {
 					jvmTop.run(new VMProfileView(pid, width));
@@ -198,10 +217,13 @@ public class JvmTop {
 				if (profileMemMode) {
 					jvmTop.run(new VMMemProfileView(pid, width, deltasEnabled));
 				} else {
-					VMDetailView vmDetailView = new VMDetailView(pid, width);
+					vmDetailView = new VMDetailView(pid, width);
 					vmDetailView.setDisplayedThreadLimit(threadLimitEnabled);
 					if (threadlimit != null) {
 						vmDetailView.setNumberOfDisplayedThreads(threadlimit);
+					}
+					if (stackLimit != null) {
+						VMDetailView.setStackTraceElementsShown(stackLimit);
 					}
 					if (threadNameWidth != null) {
 						vmDetailView.setThreadNameDisplayWidth(threadNameWidth);
@@ -294,6 +316,16 @@ public class JvmTop {
 	protected void run(ConsoleView view) throws Exception {
 		try {
 			System.setOut(new PrintStream(new BufferedOutputStream(new FileOutputStream(FileDescriptor.out)), false));
+			keyListener = new JvmTopkeyListener(this);
+			GlobalScreen.addNativeKeyListener(keyListener);
+			if (view instanceof VMDetailView) {
+				keyListener.addDetailedView((VMDetailView) view);
+			}
+			if (view instanceof VMOverviewView) {
+				keyListener.addOverviewView((VMOverviewView) view);
+			}
+			keyListener.init();
+
 			int iterations = 0;
 			while (!view.shouldExit()) {
 				if (maxIterations_ > 1 || maxIterations_ == -1) {
@@ -323,7 +355,6 @@ public class JvmTop {
 	/**
 	 *
 	 */
-
 	private static void clearTerminal() {
 		if (System.getProperty("os.name").contains("Windows")) {
 			// hack
@@ -345,14 +376,13 @@ public class JvmTop {
 	private void printTopBar() {
 		System.out.printf(" JvmTop %s - %8tT, %6s, %2d cpus, %15.15s", VERSION, new Date(), localOSBean_.getArch(),
 				localOSBean_.getAvailableProcessors(), localOSBean_.getName() + " " + localOSBean_.getVersion());
-		
+
 		if (supportSystemLoadAverage() && localOSBean_.getSystemLoadAverage() != -1) {
 			System.out.printf(", load avg %3.2f%n", localOSBean_.getSystemLoadAverage());
 		} else {
 			System.out.println();
 		}
-		System.out.println(" https://github.com/patric-r/jvmtop");
-		System.out.println();
+		System.out.println(" Hotkeys: [0-9] Set view refreshing rate; [+,-] Change number of elements shown");
 	}
 
 	private boolean supportSystemLoadAverage() {
@@ -372,6 +402,75 @@ public class JvmTop {
 
 	public void setDelay(Double delay) {
 		delay_ = delay;
+	}
+
+	class JvmTopkeyListener implements NativeKeyListener {
+
+		public JvmTopkeyListener(JvmTop instance) {
+			super();
+			this.instance = instance;
+		}
+
+		JvmTop instance;
+		VMDetailView detailView;
+		VMOverviewView overviewView;
+
+		public void nativeKeyPressed(NativeKeyEvent e) {
+			try {
+				Double newDelay = Double.parseDouble(NativeKeyEvent.getKeyText(e.getKeyCode()));
+				if (newDelay > 0 && newDelay < 10) {
+					instance.delay_ = newDelay.doubleValue();
+				}
+			} catch (Exception e2) {
+				// do nothing
+			}
+			NativeKeyEvent.getKeyText(e.getKeyCode()).contains("Q");
+			if (NativeKeyEvent.getKeyText(e.getKeyCode()).contains("Q")) {
+				System.exit(0);
+			}
+			int numberOfDisplayedThreads;
+			int stackTraceElementsShown;
+			if (detailView != null) {
+				numberOfDisplayedThreads = detailView.getNumberOfDisplayedThreads();
+				stackTraceElementsShown = VMDetailView.getStackTraceElementsShown();
+				if (NativeKeyEvent.getKeyText(e.getKeyCode()).contains("Close Bracket")) {
+					if (numberOfDisplayedThreads < 10 && stackTraceElementsShown < 10) {
+						detailView.setNumberOfDisplayedThreads(++numberOfDisplayedThreads);
+						VMDetailView.setStackTraceElementsShown(++stackTraceElementsShown);
+					}
+				}
+				if (NativeKeyEvent.getKeyText(e.getKeyCode()).contains("Slash")) {
+					if (numberOfDisplayedThreads > 3 && stackTraceElementsShown > 3) {
+						detailView.setNumberOfDisplayedThreads(--numberOfDisplayedThreads);
+						VMDetailView.setStackTraceElementsShown(--stackTraceElementsShown);
+					}
+				}
+			}
+		}
+
+		public void nativeKeyReleased(NativeKeyEvent e) {
+			// do nothing
+		}
+
+		public void nativeKeyTyped(NativeKeyEvent e) {
+			// do nothing
+		}
+
+		public void addDetailedView(VMDetailView view) {
+			this.detailView = view;
+		}
+		
+		public void addOverviewView(VMOverviewView view) {
+			this.overviewView = view;
+		}
+
+		public void init() {
+			try {
+				GlobalScreen.registerNativeHook();
+			} catch (NativeHookException ex) {
+				// do nothing
+			}
+		}
 	}
 
 }

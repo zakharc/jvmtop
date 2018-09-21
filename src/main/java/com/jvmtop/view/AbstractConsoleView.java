@@ -21,6 +21,8 @@
 package com.jvmtop.view;
 
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Base class for all console views, providing some helper methods for
@@ -30,6 +32,7 @@ import java.util.*;
  */
 public abstract class AbstractConsoleView implements ConsoleView {
 	private static final int MIN_WIDTH = 80;
+	static CountDownLatch timer = new CountDownLatch(1);
 	private boolean shouldExit_ = false;
 	protected final int width;
 
@@ -136,7 +139,7 @@ public abstract class AbstractConsoleView implements ConsoleView {
 	 * Requests the disposal of this view - it should be called again. TODO:
 	 * refactor / remove this functional, use proper exception handling instead.
 	 */
-	protected void exit() {
+	public void exit() {
 		shouldExit_ = true;
 	}
 
@@ -147,6 +150,7 @@ public abstract class AbstractConsoleView implements ConsoleView {
 	 * @param reverse
 	 * @return
 	 */
+	@SuppressWarnings("all")
 	public Map sortByValue(Map map, boolean reverse) {
 		List list = new LinkedList(map.entrySet());
 		Collections.sort(list, new Comparator() {
@@ -170,6 +174,11 @@ public abstract class AbstractConsoleView implements ConsoleView {
 
 	@Override
 	public void sleep(long millis) throws Exception {
-		Thread.sleep(millis);
+		timer.await(millis, TimeUnit.MILLISECONDS);
+	}
+	
+	@Override
+	public void awakeThread() {
+		timer.countDown();
 	}
 }

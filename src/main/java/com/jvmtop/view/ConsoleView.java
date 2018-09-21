@@ -48,4 +48,14 @@ public interface ConsoleView {
 	 * the view is allowed to do some work / telemtry retrieval during sleep.
 	 */
 	public void sleep(long millis) throws Exception;
+	
+	/**
+	 * Request exit and dispose view 
+	 * */
+	public void exit();
+	
+	/**
+	 * Awake suspended thread and set default waiting time
+	 * */
+	public void awakeThread();
 }

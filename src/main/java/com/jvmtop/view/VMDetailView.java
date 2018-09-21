@@ -46,13 +46,13 @@ public class VMDetailView extends AbstractConsoleView {
 
 	private boolean sortByTotalCPU_ = false;
 
-	private int numberOfDisplayedThreads_ = 5;
-
 	private int threadNameDisplayWidth_ = 30;
 
 	private boolean displayedThreadLimit_ = true;
 
-	private final static int STACK_TRACE_ELEMENTS_SHOWN = 5;
+	private static int numberOfDisplayedThreads = 5;
+
+	private static int stackTraceElementsShown = 5;
 
 	private Map<Long, Long> previousThreadCPUMillis = new HashMap<Long, Long>();
 
@@ -172,7 +172,7 @@ public class VMDetailView extends AbstractConsoleView {
 			for (Long tid : cpuTimeMap.keySet()) {
 				ThreadInfo info = vmInfo_.getThreadMXBean().getThreadInfo(tid);
 				displayedThreads++;
-				if (displayedThreads > numberOfDisplayedThreads_ && displayedThreadLimit_) {
+				if (displayedThreads > numberOfDisplayedThreads && displayedThreadLimit_) {
 					break;
 				}
 				if (info != null) {
@@ -183,13 +183,13 @@ public class VMDetailView extends AbstractConsoleView {
 									vmInfo_.getProxyClient().getProcessCpuTime(), 1),
 							getBlockedThread(info));
 					StackTraceElement[] stackTraceElements = vmInfo_.getThreadMXBean()
-							.getThreadInfo(tid, STACK_TRACE_ELEMENTS_SHOWN).getStackTrace();
+							.getThreadInfo(tid, stackTraceElementsShown).getStackTrace();
 					printStackTraces(stackTraceElements);
 				}
 			}
-			if (newThreadCPUMillis.size() >= numberOfDisplayedThreads_ && displayedThreadLimit_) {
+			if (newThreadCPUMillis.size() >= numberOfDisplayedThreads && displayedThreadLimit_) {
 				System.out.printf(" Note: Only top %d threads (according cpu load) are shown!",
-						numberOfDisplayedThreads_);
+						numberOfDisplayedThreads);
 			}
 			previousThreadCPUMillis = newThreadCPUMillis;
 		} else {
@@ -199,7 +199,7 @@ public class VMDetailView extends AbstractConsoleView {
 	}
 
 	private static void printStackTraces(StackTraceElement[] stackTraceElements) {
-		for (int i = 0; i < stackTraceElements.length && i < STACK_TRACE_ELEMENTS_SHOWN; i++) {
+		for (int i = 0; i < stackTraceElements.length && i < stackTraceElementsShown; i++) {
 			StackTraceElement s = stackTraceElements[i];
 			System.out.println("\t| at " + s.getClassName() + "." + s.getMethodName() + "(" + s.getFileName() + ":"
 					+ s.getLineNumber() + ")");
@@ -214,11 +214,25 @@ public class VMDetailView extends AbstractConsoleView {
 	}
 
 	public int getNumberOfDisplayedThreads() {
-		return numberOfDisplayedThreads_;
+		return numberOfDisplayedThreads;
 	}
 
 	public void setNumberOfDisplayedThreads(int numberOfDisplayedThreads) {
-		numberOfDisplayedThreads_ = numberOfDisplayedThreads;
+		VMDetailView.numberOfDisplayedThreads = numberOfDisplayedThreads;
+	}
+
+	/**
+	 * @return the stackTraceElementsShown
+	 */
+	public static int getStackTraceElementsShown() {
+		return stackTraceElementsShown;
+	}
+
+	/**
+	 * @param stackTraceElementsShown the stackTraceElementsShown to set
+	 */
+	public static void setStackTraceElementsShown(int stackTraceElementsShown) {
+		VMDetailView.stackTraceElementsShown = stackTraceElementsShown;
 	}
 
 	public boolean isDisplayedThreadLimit() {
