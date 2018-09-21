@@ -59,7 +59,7 @@ import joptsimple.OptionSet;
  */
 public class JvmTop {
 
-	public static final String VERSION = "1.0";
+	public static final String VERSION = "0.9";
 	private Double delay_ = 1.0;
 	private Boolean supportsSystemAverage_;
 	private java.lang.management.OperatingSystemMXBean localOSBean_;
@@ -68,6 +68,8 @@ public class JvmTop {
 			new byte[] { (byte) 0x1b, (byte) 0x5b, (byte) 0x31, (byte) 0x4a, (byte) 0x1b, (byte) 0x5b, (byte) 0x48 });
 
 	private int maxIterations_ = -1;
+	private final static double DELAY_OVERVIEW = 1.5;
+	private final static double DELAY_DETAIL = 5.0;
 	private static Logger logger;
 
 	private static OptionParser createOptionParser() {
@@ -123,8 +125,8 @@ public class JvmTop {
 
 		boolean sysInfoOption = a.has("sysinfo");
 		Integer pid = null;
-		Integer width = null;
-		double delay = 5.0;
+		Integer width = null;		
+		double delay = DELAY_DETAIL;
 		boolean profileMode = a.has("profile");
 		boolean profileMemMode = a.has("profile-mem");
 		boolean deltasEnabled = a.has("enable-deltas");
@@ -187,6 +189,7 @@ public class JvmTop {
 			jvmTop.setDelay(delay);
 			jvmTop.setMaxIterations(iterations);
 			if (pid == null) {
+				jvmTop.setDelay(DELAY_OVERVIEW);
 				jvmTop.run(new VMOverviewView(width));
 			} else {
 				if (profileMode) {
@@ -287,6 +290,7 @@ public class JvmTop {
 		}
 	}
 
+	@SuppressWarnings("resource")
 	protected void run(ConsoleView view) throws Exception {
 		try {
 			System.setOut(new PrintStream(new BufferedOutputStream(new FileOutputStream(FileDescriptor.out)), false));
@@ -320,7 +324,7 @@ public class JvmTop {
 	 *
 	 */
 
-	private void clearTerminal() {
+	private static void clearTerminal() {
 		if (System.getProperty("os.name").contains("Windows")) {
 			// hack
 			System.out.printf("%n%n%n%n%n%n%n%n%n%n%n%n%n%n%n%n%n%n%n%n%n%n%n%n%n%n%n%n%n%n%n");
@@ -336,13 +340,12 @@ public class JvmTop {
 	}
 
 	/**
-	 * @throws NoSuchMethodException
 	 * @throws SecurityException
 	 */
 	private void printTopBar() {
 		System.out.printf(" JvmTop %s - %8tT, %6s, %2d cpus, %15.15s", VERSION, new Date(), localOSBean_.getArch(),
 				localOSBean_.getAvailableProcessors(), localOSBean_.getName() + " " + localOSBean_.getVersion());
-
+		
 		if (supportSystemLoadAverage() && localOSBean_.getSystemLoadAverage() != -1) {
 			System.out.printf(", load avg %3.2f%n", localOSBean_.getSystemLoadAverage());
 		} else {

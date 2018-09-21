@@ -286,7 +286,7 @@ public class VMInfo {
 		// long cpuTime = osBean.getProcessCpuTime();
 		long gcTime = sumGCTimes();
 		gcCount = sumGCCount();
-		if (lastUpTime > 0 && lastCPUTime > 0 && gcTime > 0) {
+		if (lastUpTime > 0 && lastCPUTime > 0 && gcTime >= 0) {
 			deltaUptime_ = uptime - lastUpTime;
 			deltaCpuTime_ = (cpuTime - lastCPUTime) / 1000000;
 			deltaGcTime_ = gcTime - lastGcTime;
