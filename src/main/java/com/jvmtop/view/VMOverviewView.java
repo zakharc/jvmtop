@@ -111,7 +111,6 @@ public class VMOverviewView extends AbstractConsoleView {
 
 	/**
 	 * @param vmMap
-	 * @param vmMap
 	 * @param set
 	 */
 	private void scanForNewVMs() {
@@ -138,4 +137,25 @@ public class VMOverviewView extends AbstractConsoleView {
 				"HPMAX", "NHCUR", "NHMAX", "CPU", "GC", "VM", "USERNAME", "#T", "DL");
 	}
 
+	public List<Integer> getVMIDs() {
+		List<Integer> vmList = new LinkedList<>();
+		for (VMInfo vmInfo : vmInfoList) {
+			if (vmInfo.getId() != null) {
+				vmList.add(vmInfo.getId());
+			}
+		}
+		return vmList;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.jvmtop.view.ConsoleView#printFooter()
+	 */
+	@Override
+	public void printFooter() {
+		System.out.println(System.lineSeparator() + " [+] Enter VMID from the list above to retrieve detailed info. Confirm with 'Enter':");
+		if (additionalFooterMessage != null) {
+			System.out.println(additionalFooterMessage);
+		}
+		setAdditionalFooterMessage(null);
+	}
 }

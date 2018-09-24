@@ -35,6 +35,7 @@ public abstract class AbstractConsoleView implements ConsoleView {
 	static CountDownLatch timer = new CountDownLatch(1);
 	private boolean shouldExit_ = false;
 	protected final int width;
+	protected String additionalFooterMessage = null;
 
 	/**
 	 *
@@ -180,5 +181,12 @@ public abstract class AbstractConsoleView implements ConsoleView {
 	@Override
 	public void awakeThread() {
 		timer.countDown();
+	}
+
+	/**
+	 * @param additionalFooterMessage the additionalFooterMessage to set
+	 */
+	public void setAdditionalFooterMessage(String additionalFooterMessage) {
+		this.additionalFooterMessage = additionalFooterMessage;
 	}
 }

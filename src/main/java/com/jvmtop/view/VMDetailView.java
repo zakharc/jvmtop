@@ -277,4 +277,16 @@ public class VMDetailView extends AbstractConsoleView {
 		}
 		return deltaThreadCpuTime / factor / totalTime * 100d;
 	}
+
+	/* (non-Javadoc)
+	 * @see com.jvmtop.view.ConsoleView#printFooter()
+	 */
+	@Override
+	public void printFooter() {
+		System.out.println("\n\n" + " Hotkeys: [0-9] Set view refreshing rate; [+,-] Change number of elements shown");
+		if (additionalFooterMessage != null) {
+			System.out.println(additionalFooterMessage);
+		}
+		setAdditionalFooterMessage(null);
+	}
 }

@@ -32,6 +32,11 @@ public interface ConsoleView {
 	 * @throws Exception
 	 */
 	public void printView() throws Exception;
+	
+	/**
+	 * Prints the footer to STDOUT.
+	 * */
+	public void printFooter();
 
 	/**
 	 * Notifies that this view encountered issues and should be called again (e.g.

@@ -110,4 +110,12 @@ public class VMMemProfileView extends AbstractConsoleView implements Closeable {
 		hVm.detach();
 	}
 
+	/* (non-Javadoc)
+	 * @see com.jvmtop.view.ConsoleView#printFooter()
+	 */
+	@Override
+	public void printFooter() {
+		//
+	}
+
 }

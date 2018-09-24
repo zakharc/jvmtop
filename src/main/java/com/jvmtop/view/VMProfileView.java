@@ -106,4 +106,12 @@ public class VMProfileView extends AbstractConsoleView {
 		return line;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.jvmtop.view.ConsoleView#printFooter()
+	 */
+	@Override
+	public void printFooter() {
+		//
+	}
+
 }

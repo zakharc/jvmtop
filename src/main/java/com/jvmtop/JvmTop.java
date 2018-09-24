@@ -35,10 +35,9 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.sound.midi.Soundbank;
+
 import org.jnativehook.GlobalScreen;
-import org.jnativehook.NativeHookException;
-import org.jnativehook.keyboard.NativeKeyEvent;
-import org.jnativehook.keyboard.NativeKeyListener;
 
 import com.jvmtop.profiler.HeapSampler;
 import com.jvmtop.view.ConsoleView;
@@ -64,19 +63,24 @@ import joptsimple.OptionSet;
 public class JvmTop {
 
 	public static final String VERSION = "0.9";
-	private final static double DELAY_OVERVIEW = 1.5;
-	private final static double DELAY_DETAIL = 3.0;
-	private final static double MIN_ELEMENTS_SHOWN = 3;
-	private final static double MAX_ELEMENTS_SHOWN = 10;
+	private final static double DELAY_OVERVIEW = 5.5;
+	final static double DELAY_DETAIL = 3.0;
+	final static double MIN_ELEMENTS_SHOWN = 3;
+	final static double MAX_ELEMENTS_SHOWN = 10;
+	final static int MAXIMUM_SYSTEM_PID_LENGTH = 5;
 	private final static String ERASE_TERMINAL_SCREEN = new String(
 			new byte[] { (byte) 0x1b, (byte) 0x5b, (byte) 0x31, (byte) 0x4a, (byte) 0x1b, (byte) 0x5b, (byte) 0x48 });
+	final static String ERASE_TERMINAL_LINE = new String(
+			new byte[] { (byte) 0x1b, (byte) 0x5b, (byte) 0x31, (byte) 0x4b});
 
-	private Double delay_ = 1.0;
+	Double delay_ = 1.0;
 	private int maxIterations_ = -1;
 	private Boolean supportsSystemAverage_;
 	private java.lang.management.OperatingSystemMXBean localOSBean_;
-	private JvmTopKeyListener keyListener;
-	private static VMDetailView vmDetailView;
+	private static JvmTopKeyListener keyListener = null;
+	static JvmTop jvmTop = new JvmTop();
+	
+	static VMDetailView vmDetailView;
 	private static VMOverviewView vmOverviewView;
 	private static Logger logger;
 	private static Logger loggerJNative = Logger.getLogger(GlobalScreen.class.getPackage().getName());
@@ -124,6 +128,11 @@ public class JvmTop {
 		logger = Logger.getLogger("jvmtop");
 		loggerJNative.setLevel(Level.OFF);
 		loggerJNative.setUseParentHandlers(false);
+		
+		keyListener = new JvmTopKeyListener(jvmTop);
+		GlobalScreen.addNativeKeyListener(keyListener);
+		keyListener.init();
+		
 
 		OptionParser parser = createOptionParser();
 		OptionSet a = parser.parse(args);
@@ -203,9 +212,9 @@ public class JvmTop {
 		if (sysInfoOption) {
 			outputSystemProps();
 		} else {
-			JvmTop jvmTop = new JvmTop();
 			jvmTop.setDelay(delay);
 			jvmTop.setMaxIterations(iterations);
+
 			if (pid == null) {
 				jvmTop.setDelay(DELAY_OVERVIEW);
 				vmOverviewView = new VMOverviewView(width);
@@ -308,16 +317,13 @@ public class JvmTop {
 	protected void run(ConsoleView view) throws Exception {
 		try {
 			System.setOut(new PrintStream(new BufferedOutputStream(new FileOutputStream(FileDescriptor.out)), false));
-			keyListener = new JvmTopKeyListener(this);
-			GlobalScreen.addNativeKeyListener(keyListener);
+
 			if (view instanceof VMDetailView) {
 				keyListener.addDetailedView((VMDetailView) view);
 			}
 			if (view instanceof VMOverviewView) {
 				keyListener.addOverviewView((VMOverviewView) view);
 			}
-			keyListener.init();
-
 			int iterations = 0;
 			while (!view.shouldExit()) {
 				if (maxIterations_ > 1 || maxIterations_ == -1) {
@@ -325,7 +331,7 @@ public class JvmTop {
 				}
 				printTopBar();
 				view.printView();
-				System.out.println("\n");
+				view.printFooter();
 				System.out.flush();
 				if (iterations >= maxIterations_ && maxIterations_ > 0) {
 					break;
@@ -371,7 +377,6 @@ public class JvmTop {
 		} else {
 			System.out.println();
 		}
-		System.out.println(" Hotkeys: [0-9] Set view refreshing rate; [+,-] Change number of elements shown");
 	}
 
 	private boolean supportSystemLoadAverage() {
@@ -383,83 +388,6 @@ public class JvmTop {
 			}
 		}
 		return supportsSystemAverage_;
-	}
-
-	class JvmTopKeyListener implements NativeKeyListener {
-
-		public JvmTopKeyListener(JvmTop instance) {
-			super();
-			this.instance = instance;
-		}
-
-		JvmTop instance;
-		VMDetailView detailView;
-		VMOverviewView overviewView;
-
-		public void nativeKeyPressed(NativeKeyEvent e) {
-			if (detailView != null) {
-				waitForExitButtonPressed(e);
-				try {
-					Double newDelay = Double.parseDouble(NativeKeyEvent.getKeyText(e.getKeyCode()));
-					if (newDelay > 0 && newDelay < 10) {
-						instance.delay_ = newDelay.doubleValue();
-					}
-				} catch (Exception e2) {
-					// do nothing
-				}
-				int numberOfDisplayedThreads;
-				int stackTraceElementsShown;
-				if (detailView != null) {
-					numberOfDisplayedThreads = detailView.getNumberOfDisplayedThreads();
-					stackTraceElementsShown = detailView.getStackTraceElementsShown();
-					if (NativeKeyEvent.getKeyText(e.getKeyCode()).contains("Close Bracket")) {
-						if (numberOfDisplayedThreads < MAX_ELEMENTS_SHOWN && stackTraceElementsShown < MAX_ELEMENTS_SHOWN) {
-							detailView.incrementNumberOfDisplayedThreads();
-							detailView.incrementStackTraceElementsShown();
-						}
-					}
-					if (NativeKeyEvent.getKeyText(e.getKeyCode()).contains("Slash")) {
-						if (numberOfDisplayedThreads > MIN_ELEMENTS_SHOWN && stackTraceElementsShown > MIN_ELEMENTS_SHOWN) {
-							detailView.decrementNumberOfDisplayedThreads();
-							detailView.decrementStackTraceElementsShown();
-						}
-					}
-				}
-			} else {
-				waitForExitButtonPressed(e);
-				// TODO: redirecting to detailed view on pid typed
-			}
-		}
-
-		private void waitForExitButtonPressed(NativeKeyEvent e) {
-			if (NativeKeyEvent.getKeyText(e.getKeyCode()).contains("Q")) {
-				System.exit(0);
-			}
-		}
-
-		public void nativeKeyReleased(NativeKeyEvent e) {
-			// do nothing
-		}
-
-		public void nativeKeyTyped(NativeKeyEvent e) {
-			// do nothing
-		}
-
-		public void addDetailedView(VMDetailView view) {
-			this.detailView = view;
-		}
-
-		public void addOverviewView(VMOverviewView view) {
-			this.overviewView = view;
-		}
-
-		public void init() {
-			try {
-				GlobalScreen.registerNativeHook();
-			} catch (NativeHookException ex) {
-				// do nothing
-			}
-		}
 	}
 
 	public Double getDelay() {
