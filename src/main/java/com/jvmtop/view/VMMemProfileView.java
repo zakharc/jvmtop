@@ -97,7 +97,7 @@ public class VMMemProfileView extends AbstractConsoleView implements Closeable {
 
 	}
 
-	private String shortFQN(String fqn, int size) {
+	private static String shortFQN(String fqn, int size) {
 		String line = fqn;
 		if (line.length() > size) {
 			line = "..." + line.substring(3, size);

@@ -283,7 +283,7 @@ public class VMDetailView extends AbstractConsoleView {
 	 */
 	@Override
 	public void printFooter() {
-		System.out.println("\n\n" + " Hotkeys: [0-9] Set view refreshing rate; [+,-] Change number of elements shown");
+		System.out.println("\n\n" + " Hotkeys: [+,-] Set view refreshing rate; [Page Up,Page Down] Change number of elements shown;");
 		if (additionalFooterMessage != null) {
 			System.out.println(additionalFooterMessage);
 		}

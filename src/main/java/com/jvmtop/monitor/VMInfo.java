@@ -27,7 +27,6 @@ import com.sun.tools.attach.AttachNotSupportedException;
 
 import java.io.IOException;
 import java.lang.management.*;
-import java.lang.reflect.InvocationTargetException;
 import java.rmi.ConnectException;
 import java.util.Collection;
 import java.util.Comparator;
@@ -125,10 +124,8 @@ public class VMInfo {
 	/**
 	 * TODO: refactor to constructor?
 	 *
-	 * @param vmMap
 	 * @param localvm
 	 * @param vmid
-	 * @param vmInfo
 	 * @return
 	 */
 	public static VMInfo processNewVM(LocalVirtualMachine localvm, int vmid) {
@@ -151,15 +148,9 @@ public class VMInfo {
 	 * @param localvm
 	 * @param vmid
 	 * @return
-	 * @throws AttachNotSupportedException
-	 * @throws IOException
-	 * @throws NoSuchMethodException
-	 * @throws IllegalAccessException
-	 * @throws InvocationTargetException
 	 * @throws Exception
 	 */
-	private static VMInfo attachToVM(LocalVirtualMachine localvm, int vmid) throws AttachNotSupportedException,
-			IOException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, Exception {
+	private static VMInfo attachToVM(LocalVirtualMachine localvm, int vmid) throws Exception {
 		// VirtualMachine vm = VirtualMachine.attach("" + vmid);
 		try {
 

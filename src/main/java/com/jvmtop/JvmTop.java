@@ -35,8 +35,6 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.sound.midi.Soundbank;
-
 import org.jnativehook.GlobalScreen;
 
 import com.jvmtop.profiler.HeapSampler;
@@ -63,25 +61,23 @@ import joptsimple.OptionSet;
 public class JvmTop {
 
 	public static final String VERSION = "0.9";
-	private final static double DELAY_OVERVIEW = 5.5;
+	private final static double DELAY_OVERVIEW = 1.5;
 	final static double DELAY_DETAIL = 3.0;
-	final static double MIN_ELEMENTS_SHOWN = 3;
-	final static double MAX_ELEMENTS_SHOWN = 10;
 	final static int MAXIMUM_SYSTEM_PID_LENGTH = 5;
 	private final static String ERASE_TERMINAL_SCREEN = new String(
 			new byte[] { (byte) 0x1b, (byte) 0x5b, (byte) 0x31, (byte) 0x4a, (byte) 0x1b, (byte) 0x5b, (byte) 0x48 });
 	final static String ERASE_TERMINAL_LINE = new String(
 			new byte[] { (byte) 0x1b, (byte) 0x5b, (byte) 0x31, (byte) 0x4b});
 
-	Double delay_ = 1.0;
+	protected Double delay_ = 1.0;
 	private int maxIterations_ = -1;
 	private Boolean supportsSystemAverage_;
 	private java.lang.management.OperatingSystemMXBean localOSBean_;
 	private static JvmTopKeyListener keyListener = null;
 	static JvmTop jvmTop = new JvmTop();
 	
-	static VMDetailView vmDetailView;
-	private static VMOverviewView vmOverviewView;
+	protected static VMDetailView vmDetailView;
+	protected static VMOverviewView vmOverviewView;
 	private static Logger logger;
 	private static Logger loggerJNative = Logger.getLogger(GlobalScreen.class.getPackage().getName());
 
@@ -122,29 +118,18 @@ public class JvmTop {
 		return parser;
 	}
 
+	@SuppressWarnings("resource")
 	public static void main(String[] args) throws Exception {
 		Locale.setDefault(Locale.US);
 
 		logger = Logger.getLogger("jvmtop");
 		loggerJNative.setLevel(Level.OFF);
 		loggerJNative.setUseParentHandlers(false);
-		
+		GlobalScreen.registerNativeHook();
 		keyListener = new JvmTopKeyListener(jvmTop);
 		GlobalScreen.addNativeKeyListener(keyListener);
-		keyListener.init();
-		
-
 		OptionParser parser = createOptionParser();
 		OptionSet a = parser.parse(args);
-
-		if (a.has("help")) {
-			System.out.println("jvmtop - java monitoring for the command-line");
-			System.out.println("Usage: jvmtop.sh [options...] [PID]");
-			System.out.println("");
-			parser.printHelpOn(System.out);
-			System.exit(0);
-		}
-
 		boolean sysInfoOption = a.has("sysinfo");
 		Integer pid = null;
 		Integer width = null;
@@ -157,6 +142,14 @@ public class JvmTop {
 		boolean threadLimitEnabled = true;
 		Integer threadNameWidth = null;
 		double delay;
+
+		if (a.has("help")) {
+			System.out.println("jvmtop - java monitoring for the command-line");
+			System.out.println("Usage: jvmtop.sh [options...] [PID]");
+			System.out.println("");
+			parser.printHelpOn(System.out);
+			System.exit(0);
+		}
 
 		if (a.hasArgument("n")) {
 			iterations = (Integer) a.valueOf("n");
@@ -238,11 +231,13 @@ public class JvmTop {
 						vmDetailView.setThreadNameDisplayWidth(threadNameWidth);
 					}
 					jvmTop.run(vmDetailView);
-
 				}
-
 			}
 		}
+		// check if detailed view was set to run from overview 
+		if(vmDetailView != null) {
+			jvmTop.run(vmDetailView);
+		};
 	}
 
 	private static void handleNonViewArgs(final OptionSet options, Integer pid) {
@@ -317,12 +312,13 @@ public class JvmTop {
 	protected void run(ConsoleView view) throws Exception {
 		try {
 			System.setOut(new PrintStream(new BufferedOutputStream(new FileOutputStream(FileDescriptor.out)), false));
-
 			if (view instanceof VMDetailView) {
 				keyListener.addDetailedView((VMDetailView) view);
+				keyListener.addOverviewView(null);
 			}
 			if (view instanceof VMOverviewView) {
 				keyListener.addOverviewView((VMOverviewView) view);
+				keyListener.addDetailedView(null);
 			}
 			int iterations = 0;
 			while (!view.shouldExit()) {
@@ -405,5 +401,4 @@ public class JvmTop {
 	public void setMaxIterations(int iterations) {
 		maxIterations_ = iterations;
 	}
-
 }
