@@ -91,7 +91,7 @@ public class VMOverviewView extends AbstractConsoleView {
 			deadlockState = "!D";
 		}
 
-		System.out.printf("%5d %-15.15s %5s %5s %5s %5s %5.2f%% %5.2f%% %-5.5s %8.8s %4d %2.2s%n", vmInfo.getId(),
+		System.out.printf("%5d %-25.15s %7s %7s %7s %7s %6.2f%% %6.2f%% %6.5s %8.4s %5d %3.2s%n", vmInfo.getId(),
 				getEntryPointClass(vmInfo.getDisplayName()), toMB(vmInfo.getHeapUsed()), toMB(vmInfo.getHeapMax()),
 				toMB(vmInfo.getNonHeapUsed()), toMB(vmInfo.getNonHeapMax()), vmInfo.getCpuLoad() * 100,
 				vmInfo.getGcLoad() * 100, vmInfo.getVMVersion(), vmInfo.getOSUser(), vmInfo.getThreadCount(),
@@ -133,7 +133,7 @@ public class VMOverviewView extends AbstractConsoleView {
 	 *
 	 */
 	private void printHeader() {
-		System.out.printf("%5s %-15.15s %5s %5s %5s %5s %6s %6s %5s %8s %4s %2s%n", "PID", "MAIN-CLASS", "HPCUR",
+		System.out.printf("%5s %-25.15s %7s %7s %7s %7s %7s %7s %6s %8s %5s %3s%n", "PID", "MAIN-CLASS", "HPCUR",
 				"HPMAX", "NHCUR", "NHMAX", "CPU", "GC", "VM", "USERNAME", "#T", "DL");
 	}
 

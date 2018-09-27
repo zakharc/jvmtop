@@ -46,7 +46,7 @@ public class VMDetailView extends AbstractConsoleView {
 
 	private boolean sortByTotalCPU_ = false;
 
-	private int threadNameDisplayWidth_ = 30;
+	private int threadNameDisplayWidth_ = 75;
 
 	private boolean displayedThreadLimit_ = true;
 
@@ -124,7 +124,7 @@ public class VMDetailView extends AbstractConsoleView {
 		System.out.printf(" GC-Time: %-7s  #GC-Runs: %-8d  #TotalLoadedClasses: %-8d%n", toHHMM(vmInfo_.getGcTime()),
 				vmInfo_.getGcCount(), vmInfo_.getTotalLoadedClassCount());
 
-		System.out.printf(" CPU: %5.2f%% GC: %5.2f%% HEAP:%5s /%5s NONHEAP:%5s /%5s%n", vmInfo_.getCpuLoad() * 100,
+		System.out.printf(" GC: %5.2f%% HEAP:%5s /%5s NONHEAP:%5s /%5s%n",
 				vmInfo_.getGcLoad() * 100, toMB(vmInfo_.getHeapUsed()), toMB(vmInfo_.getHeapMax()),
 				toMB(vmInfo_.getNonHeapUsed()), toMB(vmInfo_.getNonHeapMax()));
 
@@ -139,8 +139,8 @@ public class VMDetailView extends AbstractConsoleView {
 	 */
 	@SuppressWarnings("unchecked")
 	private void printTopThreads() throws Exception {
-		System.out.printf(" %6s %-" + threadNameDisplayWidth_ + "s  %13s %8s    %8s %5s %n", "TID", "NAME", "STATE",
-				"CPU", "TOTALCPU", "BLOCKEDBY");
+		System.out.printf(" %6s %-" + threadNameDisplayWidth_ + "s  %13s %8s    %8s %n", "TID", "NAME", "STATE",
+				"CPU", "BLOCKEDBY");
 
 		if (vmInfo_.getThreadMXBean().isThreadCpuTimeSupported()) {
 
@@ -176,9 +176,8 @@ public class VMDetailView extends AbstractConsoleView {
 					break;
 				}
 				if (info != null) {
-					System.out.printf(" %6d %-" + threadNameDisplayWidth_ + "s  %13s %5.2f%%    %5.2f%% %5s %n", tid,
+					System.out.printf(" %6d %-" + threadNameDisplayWidth_ + "s  %13s    %5.2f%% %5s %n", tid,
 							leftStr(info.getThreadName(), threadNameDisplayWidth_), info.getThreadState(),
-							getThreadCPUUtilization(cpuTimeMap.get(tid), vmInfo_.getDeltaUptime()),
 							getThreadCPUUtilization(vmInfo_.getThreadMXBean().getThreadCpuTime(tid),
 									vmInfo_.getProxyClient().getProcessCpuTime(), 1),
 							getBlockedThread(info));
