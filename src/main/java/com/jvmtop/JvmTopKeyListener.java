@@ -88,8 +88,8 @@ class JvmTopKeyListener implements NativeKeyListener {
 	 * */
 	private void triggerActionForDetailView(NativeKeyEvent event) {
 		if (detailView != null) {
-			fireOnKeyPressed(event, "Page Down", () -> increaseNumberOfStackAndThreadElementsShown());
-			fireOnKeyPressed(event, "Page Up", () -> decreaseNumberOfStackAndThreadElementsShown());
+			fireOnKeyPressed(event, "Page Up", () -> increaseNumberOfStackAndThreadElementsShown());
+			fireOnKeyPressed(event, "Page Down", () -> decreaseNumberOfStackAndThreadElementsShown());
 			fireOnKeyPressed(event, "Close Bracket", () -> decreaseDelay());
 			fireOnKeyPressed(event, "Slash", () -> increaseDelay());
 			fireOnKeyPressed(event, "0xe4e", () -> decreaseDelay()); // 0xe4e - "+" on numerical pad

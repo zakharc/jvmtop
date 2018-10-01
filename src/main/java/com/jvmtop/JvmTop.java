@@ -61,7 +61,7 @@ import joptsimple.OptionSet;
 public class JvmTop {
 
 	public static final String VERSION = "0.9";
-	private final static double DELAY_OVERVIEW = 1.0;
+	private final static double DELAY_OVERVIEW = 5.0;
 	final static double DELAY_DETAIL = 2.0;
 	final static int MAXIMUM_SYSTEM_PID_LENGTH = 5;
 	private final static String ERASE_TERMINAL_SCREEN = new String(
